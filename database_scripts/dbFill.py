@@ -120,7 +120,10 @@ def main(argv):
         response = conn.getresponse()
         data = response.read()
         d = json.loads(data)
-
+        # if d.get('data') is None:
+        #     print("Task creation failed:", d)
+        #     continue
+        # print(d);
         taskID = str(d['data']['_id'])
 
         # Make sure the task is added to the pending list of the user

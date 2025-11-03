@@ -1,3 +1,4 @@
+// var secrets = require('../config/secrets');
 module.exports = function (router) {
 
     var homeRoute = router.route('/');
