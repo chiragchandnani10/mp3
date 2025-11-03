@@ -1,11 +1,9 @@
 
-// routes/tasks.js
 const express = require('express');
 const router = express.Router();
 const Task = require('../models/Task');
 const User = require('../models/User');
 
-/* ----------------------- helpers ----------------------- */
 
 const PARSE_ERR = Symbol('PARSE_ERR');
 
@@ -43,15 +41,10 @@ function serverError(res, err) {
   return res.status(500).json({ message: 'Server error', data: null });
 }
 
-/**
- * Maintain User.pendingTasks (strings) for a given task.
- * - Add task id if assignedUser is set and task is NOT completed
- * - Remove task id from any user ids provided
- */
+
 async function syncPendingTasks({ task, addForUserId, removeFromUserIds = [] }) {
   const tid = String(task._id);
 
-  // Remove from provided users (unique list, skip falsy)
   const toRemove = [...new Set((removeFromUserIds || []).filter(Boolean).map(String))];
   if (toRemove.length) {
     await User.updateMany(
@@ -60,7 +53,6 @@ async function syncPendingTasks({ task, addForUserId, removeFromUserIds = [] }) 
     );
   }
 
-  // Add to assigned user if applicable (only when not completed)
   if (addForUserId && !task.completed) {
     await User.updateOne(
       { _id: String(addForUserId) },
@@ -69,11 +61,7 @@ async function syncPendingTasks({ task, addForUserId, removeFromUserIds = [] }) 
   }
 }
 
-/* ----------------------- GET /tasks ----------------------- */
-/**
- * Supports JSON-encoded: where, sort, select, skip, limit, count
- * limit defaults to 100 for tasks
- */
+
 router.get('/', async (req, res) => {
   try {
     const where  = safeJsonParse(req.query.where, {});
@@ -111,11 +99,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-/* ----------------------- POST /tasks ----------------------- */
-/**
- * Create a new task. Requires name and deadline.
- * Keeps User.pendingTasks in sync (adds task id if assigned and not completed).
- */
+
 router.post('/', async (req, res) => {
   try {
     const { name, deadline } = req.body || {};
@@ -165,10 +149,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-/* ----------------------- GET /tasks/:id ----------------------- */
-/**
- * Supports JSON-encoded `select`
- */
+
 router.get('/:id', async (req, res) => {
   try {
     const select = safeJsonParse(req.query.select, null);
@@ -188,15 +169,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-/* ----------------------- PUT /tasks/:id ----------------------- */
-/**
- * Replace an entire task (PUT semantics).
- * Requires name and deadline. Recomputes assignedUserName if assignedUser present.
- * Keeps User.pendingTasks in sync:
- *  - remove from previous user's list
- *  - add to new user's list if assigned & not completed
- *  - if completed=true, ensure it is NOT in pendingTasks
- */
+
 router.put('/:id', async (req, res) => {
   try {
     const { name, deadline } = req.body || {};
@@ -248,8 +221,7 @@ router.put('/:id', async (req, res) => {
 
     const removeFrom = [];
     if (prevUserId) removeFrom.push(prevUserId);
-    // If user changed, make sure we also remove from prev (handled above)
-    // If completed, also ensure it is removed from whoever is assigned now
+   
     if (updated.completed && nextUserId) removeFrom.push(nextUserId);
 
     await syncPendingTasks({
@@ -264,10 +236,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-/* ----------------------- DELETE /tasks/:id ----------------------- */
-/**
- * Delete task. Also remove it from its assigned user's pendingTasks.
- */
+
 router.delete('/:id', async (req, res) => {
     try {
       const deleted = await Task.findByIdAndDelete(req.params.id);
