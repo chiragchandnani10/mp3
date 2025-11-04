@@ -5,6 +5,19 @@ const Task = require('../models/Task');
 const User = require('../models/User');
 
 
+function toBool(v, fallback = false) {
+  if (v === true || v === false) return v;
+  if (v === 1 || v === '1') return true;
+  if (v === 0 || v === '0') return false;
+  if (typeof v === 'string') {
+    const s = v.trim().toLowerCase();
+    if (s === 'true' || s === 'yes' || s === 'on') return true;
+    if (s === 'false' || s === 'no' || s === 'off') return false;
+  }
+  return fallback;
+}
+
+
 const PARSE_ERR = Symbol('PARSE_ERR');
 
 function safeJsonParse(str, fallback) {
@@ -132,7 +145,7 @@ router.post('/', async (req, res) => {
       name,
       description,
       deadline,
-      completed: !!completed,
+      completed: toBool(req.body.completed, false),
       assignedUser,
       assignedUserName
       // dateCreated should be auto by schema
@@ -203,7 +216,7 @@ router.put('/:id', async (req, res) => {
       name,
       description,
       deadline,
-      completed: !!completed,
+      completed: toBool(req.body.completed, false),
       assignedUser,
       assignedUserName,
       dateCreated: prev.dateCreated
